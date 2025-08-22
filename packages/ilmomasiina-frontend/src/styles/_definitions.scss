@@ -6,8 +6,8 @@
 // For Bootstrap components, the overrides are made in ilmomasiina-frontend/src/styles/app.scss.
 // If you want to override more colors, you'll also need to add them to the @use there.
 
-$primary: #0a0d10 !default;
-$secondary: #0a0d10 !default;
+$primary: #006994 !default;
+$secondary: #006994 !default;
 $red: #d74949 !default; // further assigned to $danger by Bootstrap
 $green: #319236 !default; // further assigned to $success by Bootstrap
 $text-muted: #888 !default; // uses $secondary by default, but Tietokilta has a dark $secondary
@@ -23,7 +23,7 @@ $secondary-background: #f1f1f1 !default;
 $secondary-text-color: #7a7a7a !default;
 
 // If you don't want a header logo, set this to false.
-$header-logo: true !default;
+$header-logo: false !default;
 
 // Import Bootstrap core mixins/variables/functions for use in Ilmomasiina's SCSS.
 
