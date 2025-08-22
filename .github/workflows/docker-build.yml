@@ -1,10 +1,8 @@
 name: Build & deploy
 
 env:
-  # Push images to the container registry for the current repository
   docker_tag: ghcr.io/${{ github.repository }}
 
-  # Change these to customize your build.
   branding_header_title_text: "Academic Culture Enjoyers"
   branding_header_title_text_short: "ACE"
   branding_footer_gdpr_text: "Privacy Policy"
@@ -48,8 +46,13 @@ jobs:
 
   docker:
     name: Push Docker image to GitHub Packages
+<<<<<<< HEAD
     # If you want to build on a branch instead of tags, remove packagejson from below (since there isn't a tag to check against).
     needs: [lint, packagejson]
+=======
+    needs: [lint] # no dependency on packagejson so dev pushes still build
+    if: github.ref == 'refs/heads/dev' || startsWith(github.ref, 'refs/tags/v')
+>>>>>>> b9772665 (Update docker-build.yml)
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -74,24 +77,34 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.docker_tag }}
+<<<<<<< HEAD
+=======
+          flavor: |
+            latest=${{ github.ref == 'refs/heads/dev' }} # sets :latest on dev
+>>>>>>> b9772665 (Update docker-build.yml)
           tags: |
+            # Always include a commit SHA tag
+            type=sha
+            # Branch refs (e.g. dev -> :dev)
+            type=ref,event=branch,enable=${{ github.ref_type == 'branch' }}
+            # Semver tags on pushes like v1.2.3
             type=semver,pattern={{version}},enable=${{ github.ref_type == 'tag' }}
             type=semver,pattern={{major}}.{{minor}},enable=${{ github.ref_type == 'tag' }}
-            type=ref,event=branch,enable=${{ github.ref_type == 'branch' }}
-            type=sha
+            # Extra explicit tags for dev builds
+            type=raw,value=production,enable=${{ github.ref == 'refs/heads/dev' }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/dev' }}
 
       - name: Get version tag
         id: get-version
-        run: echo "version=$(git describe --always --tags)" >> "$GITHUB_OUTPUT"
+        run: echo "version=$(git describe --always --tags || echo dev-${GITHUB_SHA::7})" >> "$GITHUB_OUTPUT"
 
-      - name: Push to GitHub Packages
+      - name: Build & Push
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          # Customize your build here
           build-args: |
             BRANDING_HEADER_TITLE_TEXT=${{ env.branding_header_title_text }}
             BRANDING_HEADER_TITLE_TEXT_SHORT=${{ env.branding_header_title_text_short }}
