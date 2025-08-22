@@ -5,13 +5,13 @@ env:
   docker_tag: ghcr.io/${{ github.repository }}
 
   # Change these to customize your build.
-  branding_header_title_text: "Tietokillan ilmomasiina"
-  branding_header_title_text_short: "Ilmomasiina"
-  branding_footer_gdpr_text: "Tietosuoja"
-  branding_footer_gdpr_link: "https://tietokilta.fi/fi/kilta/ilmorekisteri"
-  branding_footer_home_text: "Tietokilta.fi"
-  branding_footer_home_link: "https://tietokilta.fi"
-  branding_login_placeholder_email: "admin@tietokilta.fi"
+  branding_header_title_text: "Academic Culture Enjoyers"
+  branding_header_title_text_short: "ACE"
+  branding_footer_gdpr_text: "Privacy Policy"
+  branding_footer_gdpr_link: "https://academicculture.org/privacy"
+  branding_footer_home_text: "Home"
+  branding_footer_home_link: "https://academicculture.org"
+  branding_login_placeholder_email: "admin@academicculture.org"
 
 on:
   push:
@@ -186,4 +186,3 @@ jobs:
           pnpm publish --filter @tietokilta/ilmomasiina-client --no-git-checks --access public --tag ${{ steps.npm-tag.outputs.tag }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
