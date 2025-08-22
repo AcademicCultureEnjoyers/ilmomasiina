@@ -8,17 +8,16 @@ export type Branding = {
   loginPlaceholderEmail: string;
 };
 
-// The following strings can be changed here in code, or you can use Docker build args
-// (or env variables) to change them at build time.
+// The following strings can be changed here in code.
 
 const branding: Branding = {
-  headerTitle: BRANDING_HEADER_TITLE_TEXT,
-  headerTitleShort: BRANDING_HEADER_TITLE_TEXT_SHORT,
-  footerGdprText: BRANDING_FOOTER_GDPR_TEXT,
-  footerGdprLink: BRANDING_FOOTER_GDPR_LINK,
-  footerHomeText: BRANDING_FOOTER_HOME_TEXT,
-  footerHomeLink: BRANDING_FOOTER_HOME_LINK,
-  loginPlaceholderEmail: BRANDING_LOGIN_PLACEHOLDER_EMAIL,
+  headerTitle: "Academic Culture Enjoyers",
+  headerTitleShort: "ACE",
+  footerGdprText: "Privacy Policy",
+  footerGdprLink: "https://academicculture.org/privacy",
+  footerHomeText: "Home",
+  footerHomeLink: "https://academicculture.org",
+  loginPlaceholderEmail: "admin@academicculture.org",
 };
 
 export default branding;
