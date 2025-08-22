@@ -23,7 +23,7 @@ while the latest development version is in the `dev` branch.
 
 See [installation.md](docs/installation.md).
 
-## Documentation
+## Documentation  
 
 See the [documentation](docs/README.md) for more information.
 
