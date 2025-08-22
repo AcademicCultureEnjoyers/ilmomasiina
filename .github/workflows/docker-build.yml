@@ -1,8 +1,8 @@
 name: Build & deploy
 
 env:
-  # Change this to upload the built image to your own organization.
-  docker_tag: "ghcr.io/tietokilta/ilmomasiina"
+  # Push images to the container registry for the current repository
+  docker_tag: ghcr.io/${{ github.repository }}
 
   # Change these to customize your build.
   branding_header_title_text: "Tietokillan ilmomasiina"
@@ -54,10 +54,7 @@ jobs:
     permissions:
       packages: write
       contents: read
-    # Change this to your repo name to build automatically on your fork.
-    if: github.repository == 'Tietokilta/ilmomasiina' && github.ref_type == 'tag'
-    # If you want to build on a branch instead of tags, use the following instead (with your own branch name):
-    # if: github.repository == 'Tietokilta/ilmomasiina' && github.ref == 'refs/heads/dev'
+
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
