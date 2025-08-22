@@ -18,7 +18,7 @@ Major features for 2.0 are mostly done and we expect to reach a stable beta in s
 
 See [installation.md](docs/installation.md).
 
-## Documentation
+## Documentation  
 
 See the [documentation](docs/README.md) for more information.
 
