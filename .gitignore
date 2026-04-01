@@ -20,3 +20,7 @@ src/react-app-env.d.ts
 package-lock.json
 
 scripts/
+
+.pgdata
+flake.lock
+
