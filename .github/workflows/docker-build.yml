@@ -15,7 +15,7 @@ on:
   push:
     tags: ["v*"]
     # If you want to build on a branch instead of tags, use the following instead (with your own branch name):
-    # branches: [dev]
+    branches: [dev]
     # You'll likely also want to disable lint-test.yml running on the branch in that case, as it's redundant.
 
 jobs:
