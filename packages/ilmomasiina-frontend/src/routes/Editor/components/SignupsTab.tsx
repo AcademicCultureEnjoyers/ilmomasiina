@@ -148,7 +148,7 @@ const SignupTable = ({ event, signups, showQuota }: TableProps) => {
   );
 };
 
-const csvOptions: CSVOptions = { delimiter: "\t" };
+const csvOptions: CSVOptions = { delimiter: "," };
 
 const SignupsTab = () => {
   const { event, editNewSignup } = useStore((state) => state.editor);
