@@ -3,8 +3,8 @@
 **Live since 2026-09-10.** Verified against the running server.
 
 `signup.academicculture.org` resolves to `89.167.125.155`, a NixOS host that deploys itself.
-The previous Docker Compose host (`46.62.170.58`) is still powered on but serves no traffic —
-see step 9 of [runbooks/cutover.md](../runbooks/cutover.md) for decommissioning it.
+The previous Docker Compose host on Ubuntu was destroyed on 2026-09-10; this is now the only
+server serving Ilmomasiina.
 
 | | |
 |---|---|

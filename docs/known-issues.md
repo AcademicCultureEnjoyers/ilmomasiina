@@ -5,17 +5,7 @@ re-check it rather than trust this file.
 
 ## Open
 
-### 1. The old host is still running
-
-**Severity: low, but it costs money and holds a copy of the signup data.**
-
-`46.62.170.58` serves no traffic since the 2026-09-10 cutover, but is still powered on with its
-database and `/opt/ilmomasiina/.env` intact. It is kept deliberately as the rollback path.
-
-Decommission once the new host has served traffic for a few days and taken at least one
-successful nightly backup — step 9 of [runbooks/cutover.md](runbooks/cutover.md).
-
-### 2. Backups do not survive loss of the server
+### 1. Backups do not survive loss of the server
 
 **Severity: medium.**
 
@@ -26,7 +16,7 @@ against loss of the host. This is the same gap ace-immich records as its largest
 The database is ~9 MB (`pg_database_size`, 2026-09-09), so copying it off-box is nearly free.
 `services.ilmomasiinaBackup.offsiteCommand` is the hook; it is currently unset.
 
-### 3. No monitoring
+### 2. No monitoring
 
 **Severity: medium.**
 
@@ -41,7 +31,7 @@ nixos-upgrade.service` and `... ilmomasiina-backup.service` are meaningful healt
 `just deploy-status` / `just backup-status` already read them — but nothing runs them on a
 schedule.
 
-### 4. Production secrets have never been rotated
+### 3. Production secrets have never been rotated
 
 **Severity: low, rising with time.**
 
@@ -53,10 +43,21 @@ outstanding signup edit links kept working.
 Rotating them is a separate step with user-visible effects — every outstanding edit link and
 admin session breaks — so it wants to happen between events, not during one.
 
-They also exist in a second place now: the retired host's `/opt/ilmomasiina/.env`. Decommissioning
-it (issue 1) removes that copy.
+The retired host held a second copy in `/opt/ilmomasiina/.env`; that server was destroyed on
+2026-09-10, so `/etc/secrets/ilmomasiina.env` on the NixOS host is now the only copy in service.
 
 ## Resolved on 2026-09-10
+
+### The legacy Ubuntu host was decommissioned
+
+`ace-ilmo-4gb-hel1-1` (`46.62.170.58`, Hetzner id 107227673) was destroyed after the cutover,
+along with an attached 10 GB volume (id 103190711) that had been mounted at
+`/mnt/HC_Volume_103190711` since August 2025 and contained nothing but `lost+found` — the
+database had always lived on the root disk. Both had been billed since 2025-08-22.
+
+A final verified dump was taken first and kept off-box in `backups/` (gitignored). Before
+deletion, the Compose stack was stopped and the site confirmed still serving, and the DNS zone
+was scanned for any record still pointing at the old IP — there were none.
 
 ### Deploys were manual, and production ran three-month-old code
 

@@ -68,8 +68,9 @@ systemctl status nixos-upgrade.timer
 GIT_SSH_COMMAND='ssh -i /etc/secrets/github-deploy-key -o IdentitiesOnly=yes' \
   git ls-remote git@github.com:AcademicCultureEnjoyers/ilmomasiina deploy
 
-# 4. Can it pull the pinned image?
-podman pull "$(jq -r '.repository + "@" + .digest' /etc/nixos-image.json 2>/dev/null)"
+# 4. What image is it actually running, and can it pull that digest?
+podman inspect ilmomasiina --format '{{.ImageName}}'
+podman pull "$(podman inspect ilmomasiina --format '{{.ImageName}}')"
 ```
 
 Step 3 is the one that has bitten this pattern before: a missing or revoked deploy key means the
@@ -93,14 +94,22 @@ nixos-rebuild switch \
 
 Quote the flake ref. Unquoted, the `&` backgrounds the command.
 
-### Pre-cutover fallback (current production)
+If even that fails, the app is a plain container and can be run by hand while you debug the
+NixOS path:
 
 ```bash
-ssh -i ~/.ssh/hetzner_ilmomasiina -o IdentitiesOnly=yes root@46.62.170.58
-cd /opt/ilmomasiina
-docker compose pull && docker compose up -d
-docker compose logs -f app
+podman run -d --name ilmomasiina-manual --network=host \
+  --env-file /etc/secrets/ilmomasiina.env \
+  -e HOST=127.0.0.1 -e PORT=3000 \
+  -e DB_DIALECT=postgres -e DB_HOST=127.0.0.1 -e DB_PORT=5432 \
+  -e DB_USER=ilmomasiina -e DB_DATABASE=ilmomasiina -e DB_SSL=false \
+  ghcr.io/academiccultureenjoyers/ilmomasiina@<digest>
 ```
 
-`pull` is required — the compose file sets no `pull_policy`, so `up -d` alone reuses the local
-image.
+Get `<digest>` from the `deploy` branch — that is the tested one:
+
+```bash
+git show origin/deploy:infra/nixos/image.json | jq -r '.digest'
+```
+
+Stop it before the next `nixos-rebuild switch`, or two containers will contend for port 3000.

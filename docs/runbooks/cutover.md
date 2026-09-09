@@ -1,7 +1,25 @@
 # Cutover: Docker Compose on Ubuntu → NixOS
 
-Moves `signup.academicculture.org` from the current Ubuntu host to a NixOS host that deploys
-itself. **Not yet performed.**
+**Completed 2026-09-10. Kept as a record of how the migration was done and what went wrong.**
+
+The old host (`46.62.170.58`) no longer exists, so the commands in steps 1 and 9 that target it
+cannot be run. Read this if you are migrating another ACE project onto the same pattern, or if
+you need to understand why `infra/tofu` is shaped the way it is — several of its oddities
+(`dns_a_target`, the `import` block in `dns.tf`) exist only because this ran against a live site.
+
+The traps worth carrying to the next migration:
+
+- Tofu wanted to point DNS at the new server the moment it was created, before NixOS was on it.
+- The A record already existed and had to be adopted, not created.
+- `cx22` and `cpx21` plan cleanly and fail at apply — check per-datacenter availability.
+- A dump restored as `postgres` leaves the app unable to read its own tables.
+- `ENFORCE_HTTPS` is a boolean, despite the app's own warning telling you to set it to `proxy`.
+- Read the plan's **summary line**, not just the resource diffs. `1 to destroy` on a DNS record
+  is a brief outage, and it is easy to miss.
+
+---
+
+Moves `signup.academicculture.org` from the Ubuntu host to a NixOS host that deploys itself.
 
 There is no in-place conversion — this provisions a new server and moves DNS. The old host stays
 up and untouched until the new one is verified, so the rollback at any point before step 7 is
