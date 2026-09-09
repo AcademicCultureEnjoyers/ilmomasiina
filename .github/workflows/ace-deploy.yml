@@ -1,0 +1,133 @@
+name: ACE build & publish
+
+# Fork-only build. Upstream's docker-build.yml is left byte-identical to
+# Tietokilta/ilmomasiina so that merges from upstream never conflict on it —
+# every job in that file gates on `github.repository == 'Tietokilta/ilmomasiina'`,
+# so it is inert here and does not double-build.
+#
+# Anything ACE-specific belongs in this file. Upstream will never touch it.
+#
+# A green run here means the image is published and the commit is eligible to
+# deploy — not that production changed. The server pulls on its own timer
+# (see infra/, Phase 2); until that lands, deploys are still manual:
+#   ssh root@signup.academicculture.org
+#   cd /opt/ilmomasiina && docker compose pull && docker compose up -d
+
+on:
+  push:
+    branches: [dev]
+  # Build PRs too, so a change that breaks the image fails review rather than
+  # landing on dev and breaking the next deploy. PR builds do not push.
+  pull_request:
+    branches: [dev]
+
+concurrency:
+  group: ace-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  docker_tag: ghcr.io/${{ github.repository }}
+
+  branding_header_title_text: "Academic Culture Enjoyers"
+  branding_header_title_text_short: "ACE"
+  branding_footer_gdpr_text: "Privacy Policy"
+  branding_footer_gdpr_link: "https://academicculture.org/privacy"
+  branding_footer_home_text: "Home"
+  branding_footer_home_link: "https://academicculture.org"
+  branding_login_placeholder_email: "admin@academicculture.org"
+
+jobs:
+  lint:
+    name: Lint & type-check
+    # Reuses upstream's workflow rather than duplicating it, so upstream's
+    # improvements to lint/typecheck/test apply here for free.
+    uses: ./.github/workflows/lint-test.yml
+
+  docker:
+    name: Push Docker image to GitHub Packages
+    needs: [lint]
+    # Guard against forks-of-this-fork publishing to our package namespace.
+    if: github.repository == 'AcademicCultureEnjoyers/ilmomasiina'
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+        with:
+          # `git describe --tags` needs history and tags, which the default
+          # shallow checkout does not fetch.
+          fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        # Skipped on PRs, which have a read-only GITHUB_TOKEN and do not push.
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.docker_tag }}
+          tags: |
+            # Immutable, commit-addressed tag. This is the one infra/ pins
+            # against; :production is a moving tag and must never be what the
+            # server tracks.
+            type=sha
+            # Branch ref (dev -> :dev)
+            type=ref,event=branch
+            # What the running server currently follows.
+            type=raw,value=production,enable=${{ github.ref == 'refs/heads/dev' }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/dev' }}
+
+      - name: Get version tag
+        id: get-version
+        run: echo "version=$(git describe --always --tags 2>/dev/null || echo dev-${GITHUB_SHA::7})" >> "$GITHUB_OUTPUT"
+
+      - name: Build & Push
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: ${{ github.event_name == 'push' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            BRANDING_HEADER_TITLE_TEXT=${{ env.branding_header_title_text }}
+            BRANDING_HEADER_TITLE_TEXT_SHORT=${{ env.branding_header_title_text_short }}
+            BRANDING_FOOTER_GDPR_TEXT=${{ env.branding_footer_gdpr_text }}
+            BRANDING_FOOTER_GDPR_LINK=${{ env.branding_footer_gdpr_link }}
+            BRANDING_FOOTER_HOME_TEXT=${{ env.branding_footer_home_text }}
+            BRANDING_FOOTER_HOME_LINK=${{ env.branding_footer_home_link }}
+            BRANDING_LOGIN_PLACEHOLDER_EMAIL=${{ env.branding_login_placeholder_email }}
+            VERSION=${{ steps.get-version.outputs.version }}
+
+      - name: Summarise
+        if: github.event_name == 'push'
+        run: |
+          {
+            echo "## Image published"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Commit | \`${{ github.sha }}\` |"
+            echo "| Digest | \`${{ steps.build.outputs.digest }}\` |"
+            echo "| Version | \`${{ steps.get-version.outputs.version }}\` |"
+            echo
+            echo "Production does **not** update automatically yet — deploy is still manual."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+    outputs:
+      # Consumed in Phase 2 by the promote job, which pins this digest into
+      # infra/ and advances the `deploy` branch the server polls.
+      digest: ${{ steps.build.outputs.digest }}
+      version: ${{ steps.meta.outputs.version }}

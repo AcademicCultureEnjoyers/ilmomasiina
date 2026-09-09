@@ -1,21 +1,23 @@
 name: Build & deploy
 
 env:
-  docker_tag: ghcr.io/${{ github.repository }}
+  # Change this to upload the built image to your own organization.
+  docker_tag: "ghcr.io/tietokilta/ilmomasiina"
 
-  branding_header_title_text: "Academic Culture Enjoyers"
-  branding_header_title_text_short: "ACE"
-  branding_footer_gdpr_text: "Privacy Policy"
-  branding_footer_gdpr_link: "https://academicculture.org/privacy"
-  branding_footer_home_text: "Home"
-  branding_footer_home_link: "https://academicculture.org"
-  branding_login_placeholder_email: "admin@academicculture.org"
+  # Change these to customize your build.
+  branding_header_title_text: "Tietokillan ilmomasiina"
+  branding_header_title_text_short: "Ilmomasiina"
+  branding_footer_gdpr_text: "Tietosuoja"
+  branding_footer_gdpr_link: "https://tietokilta.fi/fi/kilta/ilmorekisteri"
+  branding_footer_home_text: "Tietokilta.fi"
+  branding_footer_home_link: "https://tietokilta.fi"
+  branding_login_placeholder_email: "admin@tietokilta.fi"
 
 on:
   push:
     tags: ["v*"]
     # If you want to build on a branch instead of tags, use the following instead (with your own branch name):
-    branches: [dev]
+    # branches: [dev]
     # You'll likely also want to disable lint-test.yml running on the branch in that case, as it's redundant.
 
 jobs:
@@ -46,13 +48,16 @@ jobs:
 
   docker:
     name: Push Docker image to GitHub Packages
-    needs: [lint] # no dependency on packagejson so dev pushes still build
-    if: github.ref == 'refs/heads/dev' || startsWith(github.ref, 'refs/tags/v')
+    # If you want to build on a branch instead of tags, remove packagejson from below (since there isn't a tag to check against).
+    needs: [lint, packagejson]
     runs-on: ubuntu-latest
     permissions:
       packages: write
       contents: read
-
+    # Change this to your repo name to build automatically on your fork.
+    if: github.repository == 'Tietokilta/ilmomasiina' && github.ref_type == 'tag'
+    # If you want to build on a branch instead of tags, use the following instead (with your own branch name):
+    # if: github.repository == 'Tietokilta/ilmomasiina' && github.ref == 'refs/heads/dev'
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
@@ -73,28 +78,23 @@ jobs:
         with:
           images: ${{ env.docker_tag }}
           tags: |
-            # Always include a commit SHA tag
-            type=sha
-            # Branch refs (e.g. dev -> :dev)
-            type=ref,event=branch,enable=${{ github.ref_type == 'branch' }}
-            # Semver tags on pushes like v1.2.3
             type=semver,pattern={{version}},enable=${{ github.ref_type == 'tag' }}
             type=semver,pattern={{major}}.{{minor}},enable=${{ github.ref_type == 'tag' }}
-            # Extra explicit tags for dev builds
-            type=raw,value=production,enable=${{ github.ref == 'refs/heads/dev' }}
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/dev' }}
+            type=ref,event=branch,enable=${{ github.ref_type == 'branch' }}
+            type=sha
 
       - name: Get version tag
         id: get-version
-        run: echo "version=$(git describe --always --tags || echo dev-${GITHUB_SHA::7})" >> "$GITHUB_OUTPUT"
+        run: echo "version=$(git describe --always --tags)" >> "$GITHUB_OUTPUT"
 
-      - name: Build & Push
+      - name: Push to GitHub Packages
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          # Customize your build here
           build-args: |
             BRANDING_HEADER_TITLE_TEXT=${{ env.branding_header_title_text }}
             BRANDING_HEADER_TITLE_TEXT_SHORT=${{ env.branding_header_title_text_short }}
@@ -189,3 +189,4 @@ jobs:
           pnpm publish --filter @tietokilta/ilmomasiina-client --no-git-checks --access public --tag ${{ steps.npm-tag.outputs.tag }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
