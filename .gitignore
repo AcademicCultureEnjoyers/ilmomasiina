@@ -21,6 +21,6 @@ package-lock.json
 
 scripts/
 
+# Local Postgres cluster created by the flake's shellHook.
 .pgdata
-flake.lock
 

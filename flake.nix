@@ -12,9 +12,13 @@
         pkgs = nixpkgs.legacyPackages.${system};
       in {
         devShells.default = pkgs.mkShell {
+          # Node must track .nvmrc, which CI reads via actions/setup-node.
+          # A mismatch here means the dev shell and CI build on different
+          # majors. nodejs_20 was removed from nixpkgs on its 2026-04-30 EOL,
+          # which broke this shell outright until it was bumped.
           packages = with pkgs; [
-            nodejs_20
-            nodePackages.pnpm
+            nodejs_24
+            pnpm
             postgresql_16
           ];
 
