@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{err.status_code} {err.status_text}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #f8fafc; color: #1e293b; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .card { text-align: center; padding: 3rem 2rem; }
+    .code { font-size: 5rem; font-weight: 700; color: #cbd5e1; letter-spacing: -0.05em; }
+    .text { font-size: 1.125rem; color: #64748b; margin-top: 0.75rem; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="code">{err.status_code}</div>
+    <div class="text">{err.status_text}</div>
+  </div>
+</body>
+</html>

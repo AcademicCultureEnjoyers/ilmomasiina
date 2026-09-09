@@ -1,0 +1,9 @@
+# Values are injected via op run --env-file=.env.op — do not fill this file.
+# It is kept as a reference only. terraform.tfvars is gitignored.
+
+project_subdomain    = "signup"
+
+# Optional (defaults shown):
+# production_server_type = "cx33"   # 4 vCPU, 8 GB RAM — minimum for Immich with ML
+# media_volume_size      = 100      # GB; increase as your library grows
+# hetzner_location       = "hel1"

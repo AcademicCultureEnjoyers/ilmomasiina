@@ -20,6 +20,10 @@
             nodejs_24
             pnpm
             postgresql_16
+
+            # Operational tooling — see justfile.
+            just
+            jq
           ];
 
           shellHook = ''

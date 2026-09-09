@@ -7,17 +7,25 @@ name: ACE build & publish
 #
 # Anything ACE-specific belongs in this file. Upstream will never touch it.
 #
-# A green run here means the image is published and the commit is eligible to
-# deploy — not that production changed. The server pulls on its own timer
-# (see infra/, Phase 2); until that lands, deploys are still manual:
-#   ssh root@signup.academicculture.org
-#   cd /opt/ilmomasiina && docker compose pull && docker compose up -d
+# A green run here means the image is published, its digest is pinned in
+# infra/nixos/image.json, and the `deploy` branch has been advanced — i.e. the
+# commit is now *eligible* to deploy. It does NOT mean production changed. The
+# server polls `deploy` on its own timer and rebuilds itself; confirm the
+# outcome there:
+#   just deploy-status
 
 on:
   push:
     branches: [dev]
-  # Build PRs too, so a change that breaks the image fails review rather than
-  # landing on dev and breaking the next deploy. PR builds do not push.
+    # The promote job below commits the resolved digest back to dev. Without
+    # this, that commit would retrigger the whole workflow, which would promote
+    # again, forever. A commit touching only image.json is CI's own bookkeeping
+    # and has nothing new to build.
+    paths-ignore:
+      - "infra/nixos/image.json"
+  # Build PRs too, so a change that breaks the image or the NixOS config fails
+  # review rather than landing on dev and breaking the next deploy. PR builds
+  # neither push images nor promote.
   pull_request:
     branches: [dev]
 
@@ -127,7 +135,121 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
     outputs:
-      # Consumed in Phase 2 by the promote job, which pins this digest into
-      # infra/ and advances the `deploy` branch the server polls.
+      # Consumed by the promote job, which pins this digest into infra/ and
+      # advances the `deploy` branch the server polls.
       digest: ${{ steps.build.outputs.digest }}
       version: ${{ steps.meta.outputs.version }}
+
+  promote:
+    name: Pin digest & advance deploy branch
+    needs: [docker]
+    # Only pushes to dev promote. A PR build must never move the branch that
+    # production tracks.
+    if: >-
+      github.event_name == 'push'
+      && github.ref == 'refs/heads/dev'
+      && github.repository == 'AcademicCultureEnjoyers/ilmomasiina'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    # Serialise promotion. Two concurrent runs racing to push the digest would
+    # leave `deploy` pointing at whichever finished last, not the newest commit.
+    concurrency:
+      group: ace-promote
+      cancel-in-progress: false
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v14
+
+      - name: Pin the resolved digest
+        env:
+          DIGEST: ${{ needs.docker.outputs.digest }}
+        run: |
+          set -euo pipefail
+          test -n "$DIGEST"
+          # The tag is informational; the digest is what the server deploys.
+          # Recording both means `git log infra/nixos/image.json` reads as a
+          # deploy history.
+          # Derive the tag from the commit the image was actually built from,
+          # not from HEAD — dev may have moved ahead since the docker job ran,
+          # and a tag that disagrees with the digest makes the deploy history
+          # lie about what is running.
+          jq --arg d "$DIGEST" --arg t "sha-$(echo '${{ github.sha }}' | cut -c1-7)" \
+            '.digest = $d | .tag = $t' \
+            infra/nixos/image.json > image.json.new
+          mv image.json.new infra/nixos/image.json
+          cat infra/nixos/image.json
+
+      - name: Build the production closure
+        # This is what the server will build for itself. Building it here turns
+        # an evaluation error into a failed check instead of a server that
+        # silently stops deploying — the failure mode that left ace-immich
+        # undeployed for three months.
+        run: |
+          git add infra/nixos/image.json
+          nix build ./infra/nixos#nixosConfigurations.production.config.system.build.toplevel \
+            --no-link \
+            --extra-experimental-features "nix-command flakes"
+
+      - name: Verify auto-deploy command
+        run: |
+          export NIX_CONFIG="extra-experimental-features = nix-command flakes"
+          bash tests/nixos/test_auto_deploy_command.sh
+
+      - name: Commit the pin to dev
+        id: pin
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet HEAD -- infra/nixos/image.json; then
+            echo "digest unchanged; nothing to commit"
+            echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git commit -m "chore: pin ilmomasiina image to ${{ needs.docker.outputs.digest }}" \
+                     -m "Automated by .github/workflows/ace-deploy.yml for ${{ github.sha }}."
+
+          # A human may have pushed to dev while this ran. Rebase rather than
+          # force — the pin is a leaf commit and reorders harmlessly, whereas a
+          # force push would silently drop their work.
+          for attempt in 1 2 3; do
+            if git push origin HEAD:dev; then
+              echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "push rejected (attempt $attempt); rebasing on dev"
+            git fetch origin dev
+            git rebase origin/dev
+          done
+          echo "::error::could not push the digest pin to dev after 3 attempts"
+          exit 1
+
+      - name: Advance deploy to the pinned commit
+        run: |
+          set -euo pipefail
+          SHA="${{ steps.pin.outputs.sha }}"
+          # Fast-forward only. `deploy` can never diverge from dev, and this
+          # fails loudly rather than force-pushing over a manual rollback pin.
+          git push origin "$SHA:refs/heads/deploy"
+
+          {
+            echo "## Promoted"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Source commit | \`${{ github.sha }}\` |"
+            echo "| Deployed commit | \`$SHA\` |"
+            echo "| Image digest | \`${{ needs.docker.outputs.digest }}\` |"
+            echo
+            echo "The server picks this up within ~15 minutes."
+            echo "Confirm with \`just deploy-status\` — a green run here does **not** mean production changed."
+          } >> "$GITHUB_STEP_SUMMARY"

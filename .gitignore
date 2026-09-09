@@ -24,3 +24,22 @@ scripts/
 # Local Postgres cluster created by the flake's shellHook.
 .pgdata
 
+# Secrets staged for nixos-anywhere --extra-files: the GitHub deploy key and
+# the app's production env file. These are placed on the server at install and
+# must never enter the repo.
+extra-files/
+
+# Database dumps pulled down by `just backup-fetch` — real signup data.
+backups/
+
+# Caught by the blanket `.env*` rule above, but this file holds only op://
+# references — no secret values — and `just tofu-init` cannot run without it.
+!infra/tofu/.env.op
+
+# OpenTofu local state and provider caches. State lives in Terraform Cloud;
+# terraform.tfvars is generated from 1Password at run time.
+infra/tofu/.terraform/
+infra/tofu/terraform.tfvars
+infra/tofu/terraform.tfstate
+infra/tofu/terraform.tfstate.backup
+
