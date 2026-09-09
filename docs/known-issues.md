@@ -5,40 +5,17 @@ re-check it rather than trust this file.
 
 ## Open
 
-### 1. The NixOS deployment is not live yet
+### 1. The old host is still running
 
-**Severity: high — everything else in `infra/` is theory until this lands.**
+**Severity: low, but it costs money and holds a copy of the signup data.**
 
-`infra/nixos` builds and its production closure evaluates, but production is still the original
-Docker Compose stack on Ubuntu. Until the cutover, deploys remain manual and the auto-deploy
-pipeline described in [architecture/production.md](architecture/production.md) is not running.
+`46.62.170.58` serves no traffic since the 2026-09-10 cutover, but is still powered on with its
+database and `/opt/ilmomasiina/.env` intact. It is kept deliberately as the rollback path.
 
-Evidence (2026-09-09): `docker ps` on `46.62.170.58` shows `ilmomasiina-app-1`,
-`ilmomasiina-db-1` and `ilmomasiina-caddy-1`; there is no NixOS host and no `deploy` branch
-consumer.
+Decommission once the new host has served traffic for a few days and taken at least one
+successful nightly backup — step 9 of [runbooks/cutover.md](runbooks/cutover.md).
 
-Next step: [runbooks/cutover.md](runbooks/cutover.md).
-
-### 2. Production is running three-month-old code
-
-**Severity: medium.**
-
-The running container's image was built 2026-04-01 (revision `363cfe45`). A newer image built
-2026-05-30 from `23f35e16` — the CSV delimiter fix — has been sitting in GHCR unpulled ever since,
-and `dev` has since advanced well past both.
-
-Evidence: `docker inspect ilmomasiina-app-1` reports image `sha256:0a6cfe6c…` created
-2026-04-01T08:39:08Z with label `org.opencontainers.image.revision=363cfe45…`. The container was
-recreated 2026-05-30T19:19:51Z — 25 minutes *before* that day's build finished at 19:44 UTC — so
-the new image was never pulled.
-
-Cause: `/opt/ilmomasiina/docker-compose.yml` sets no `pull_policy`, so `docker compose up -d`
-reuses the local image. Nothing on the host polls the registry.
-
-This resolves itself at cutover. It can also be fixed immediately with `docker compose pull &&
-docker compose up -d`.
-
-### 3. Backups do not survive loss of the server
+### 2. Backups do not survive loss of the server
 
 **Severity: medium.**
 
@@ -49,28 +26,48 @@ against loss of the host. This is the same gap ace-immich records as its largest
 The database is ~9 MB (`pg_database_size`, 2026-09-09), so copying it off-box is nearly free.
 `services.ilmomasiinaBackup.offsiteCommand` is the hook; it is currently unset.
 
-### 4. No monitoring
+### 3. No monitoring
 
 **Severity: medium.**
 
-Nothing watches deploys, the backup job, disk usage, or whether the site is up. Issue 2 above went
-unnoticed for three months, and the identical failure in ace-immich went unnoticed for the same
-duration. Any check reporting "last successful deploy" or "last verified backup" would have
-surfaced both in the same week.
+Nothing watches deploys, the backup job, disk usage, or whether the site is up. The stale-image
+problem resolved below went unnoticed for three months, and the identical failure in ace-immich
+went unnoticed for the same duration. Any check reporting "last successful deploy" or "last
+verified backup" would have surfaced both in the same week.
 
-After cutover, `systemctl is-failed nixos-upgrade.service` and `... ilmomasiina-backup.service`
-on the host become meaningful health signals — `just deploy-status` and `just backup-status`
-already read them, but nothing runs them on a schedule.
+This is now the largest open risk to *operations*, because the pipeline that replaced the manual
+one fails silently in exactly the same way if it breaks. `systemctl is-failed
+nixos-upgrade.service` and `... ilmomasiina-backup.service` are meaningful health signals, and
+`just deploy-status` / `just backup-status` already read them — but nothing runs them on a
+schedule.
 
-### 5. Production secrets have never been rotated
+### 4. Production secrets have never been rotated
 
 **Severity: low, rising with time.**
 
-`/opt/ilmomasiina/.env` holds `FEATHERS_AUTH_SECRET`, `NEW_EDIT_TOKEN_SECRET`, `DB_PASSWORD` and
-`MAILGUN_API_KEY`. The file dates from the original 2025-08-22 install and there is no record of
-rotation. The cutover copies these values to the new host as-is, which keeps sessions and edit
-links valid — rotating them is a deliberate, separate step with user-visible effects (existing
-signup edit links break).
+`/etc/secrets/ilmomasiina.env` holds `FEATHERS_AUTH_SECRET`, `NEW_EDIT_TOKEN_SECRET` and
+`MAILGUN_API_KEY`. These values date from the original 2025-08-22 install and there is no record
+of rotation; the cutover carried them over unchanged, deliberately, so that sessions and
+outstanding signup edit links kept working.
+
+Rotating them is a separate step with user-visible effects — every outstanding edit link and
+admin session breaks — so it wants to happen between events, not during one.
+
+They also exist in a second place now: the retired host's `/opt/ilmomasiina/.env`. Decommissioning
+it (issue 1) removes that copy.
+
+## Resolved on 2026-09-10
+
+### Deploys were manual, and production ran three-month-old code
+
+The running image was built 2026-04-01 (`363cfe45`) while a newer one from 2026-05-30 sat in
+GHCR unpulled. The container had been recreated on 2026-05-30 at 19:19 UTC — 25 minutes *before*
+that day's build finished at 19:44 — so `docker compose up -d` reused the local image.
+`docker-compose.yml` set no `pull_policy` and nothing on the host polled the registry.
+
+Fixed in two steps: production was pulled forward to current code on 2026-09-09, then migrated
+on 2026-09-10 to a NixOS host that polls the `deploy` branch every 15 minutes and rebuilds
+itself. Verified: `systemctl start nixos-upgrade.service` fetches, builds and exits 0.
 
 ## Resolved on 2026-09-09
 

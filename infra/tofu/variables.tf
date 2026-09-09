@@ -40,16 +40,16 @@ variable "dns_a_target" {
   description = <<-EOT
     IP that signup.academicculture.org resolves to.
 
-    Defaults to the legacy Ubuntu host, so that creating the new server never
-    moves live traffic as a side effect of `tofu apply`. Without this, the
-    plan points DNS at a freshly provisioned box that has no NixOS on it yet
-    and takes the site down.
+    Set explicitly rather than derived from hcloud_server.production.ipv4_address,
+    so that creating or replacing the server never moves live traffic as a side
+    effect of `tofu apply`. Changing this value is the cutover.
 
-    Set to the new server's IP (`just prod-ip`) only at step 7 of
-    docs/runbooks/cutover.md, once the new host is verified.
+    2026-09-10: cut over from the legacy Ubuntu host (46.62.170.58) to the
+    NixOS host. To roll back, set this to 46.62.170.58 and apply — the old
+    host is kept running until the new one has proven itself.
   EOT
   type        = string
-  default     = "46.62.170.58"
+  default     = "89.167.125.155"
 
   validation {
     condition     = can(regex("^([0-9]{1,3}\\.){3}[0-9]{1,3}$", var.dns_a_target))

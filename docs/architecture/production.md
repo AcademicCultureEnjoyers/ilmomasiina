@@ -1,35 +1,23 @@
 # Production architecture
 
-**Status: designed and verified to build, NOT YET DEPLOYED.**
+**Live since 2026-09-10.** Verified against the running server.
 
-Production today is still the original Docker Compose deployment on Ubuntu. This document
-describes both: what is running now, and what `infra/` will replace it with. Do not read the
-"target" section as a description of the live system until the cutover in
-[runbooks/cutover.md](../runbooks/cutover.md) is done and this notice is removed.
-
----
-
-## What is running today
+`signup.academicculture.org` resolves to `89.167.125.155`, a NixOS host that deploys itself.
+The previous Docker Compose host (`46.62.170.58`) is still powered on but serves no traffic —
+see step 9 of [runbooks/cutover.md](../runbooks/cutover.md) for decommissioning it.
 
 | | |
 |---|---|
-| Host | `46.62.170.58` (`ace-ilmo-4gb-hel1-1`), Hetzner hel1, Ubuntu |
-| Orchestration | Docker Compose, `/opt/ilmomasiina/docker-compose.yml` |
-| App | `ghcr.io/academiccultureenjoyers/ilmomasiina:production`, port 3000 internal |
-| Database | `postgres:15` container, named volume `dbdata` |
-| TLS | `caddy:2` container, `signup.academicculture.org` |
-| Config | `/opt/ilmomasiina/.env`, hand-maintained |
-| Deploys | **Manual.** `docker compose pull && docker compose up -d` over SSH |
-| Backups | **None.** |
+| Host | `89.167.125.155` (`ilmomasiina-production`), Hetzner hel1, cx23, NixOS |
+| App | podman, `ghcr.io/academiccultureenjoyers/ilmomasiina@sha256:…` pinned by digest |
+| Database | PostgreSQL 16, native (`services.postgresql`), loopback only |
+| TLS | Caddy, Let's Encrypt, `signup.academicculture.org` |
+| Config | `/etc/secrets/ilmomasiina.env`, placed at install |
+| Deploys | Automatic. Server polls `deploy` every 15 min and rebuilds itself |
+| Backups | Nightly `pg_dump`, 30-day retention — local only |
 | Monitoring | **None.** |
 
-Verified 2026-09-09 over SSH.
-
-The image tag is `:production`, a moving tag. Because `docker-compose.yml` sets no
-`pull_policy`, `docker compose up -d` alone does not fetch a newer image — which is how
-production spent three months on an image built 2026-04-01 while a newer one sat in GHCR.
-
-## Target architecture
+## Architecture
 
 A single Hetzner VPS running NixOS, deploying itself.
 
