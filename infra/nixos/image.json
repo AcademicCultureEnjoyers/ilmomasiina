@@ -1,6 +1,6 @@
 {
   "_comment": "Container image the production host runs. Updated by the promote job in .github/workflows/ace-deploy.yml, never by hand. The digest is authoritative — the tag is recorded only so a human can tell at a glance which commit is deployed.",
   "repository": "ghcr.io/academiccultureenjoyers/ilmomasiina",
-  "tag": "sha-093d797",
-  "digest": "sha256:809e9a9e758be9c0824b43fc8b2a954ed6be1233eee0883d5c2787f964110bca"
+  "tag": "sha-fb849e0",
+  "digest": "sha256:9d76ef896a7b9d53dc3797c32966f604abee86bfad974fd0acdbc399d9392667"
 }
