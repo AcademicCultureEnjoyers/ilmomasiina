@@ -24,6 +24,13 @@
             # Operational tooling — see justfile.
             just
             jq
+
+            # Infrastructure — see docs/runbooks/cutover.md.
+            # `op` is deliberately not listed: the 1Password CLI is unfree, and
+            # it is already provided system-wide on the NixOS hosts we develop
+            # on. Install it yourself if `just tofu-init` cannot find it.
+            opentofu
+            dnsutils
           ];
 
           shellHook = ''

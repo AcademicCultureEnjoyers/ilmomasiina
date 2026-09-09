@@ -3,6 +3,6 @@
     "name": "@",
     "type": "A",
     "values": ["@production"],
-    "ttl": 300
+    "ttl": 60
   }
 ]

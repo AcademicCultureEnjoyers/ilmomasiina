@@ -18,7 +18,14 @@ change plus one Let's Encrypt issuance.
 - [ ] A GitHub **deploy key** exists for this repo with read access, and you have its private half
 - [ ] Lower the DNS TTL for `signup.academicculture.org` to 60s **at least one old-TTL ahead**
 
-That last point is the one that costs hours if skipped.
+That last point is the one that costs hours if skipped. `infra/tofu` handles it: the
+`signup` A record is managed there with `ttl = 60` and `dns_a_target` defaulting to the *old*
+host, so `tofu apply` lowers the TTL without moving traffic. Do that first, wait out the
+previous TTL, and the flip in step 7 then propagates in about a minute.
+
+Note the record already existed when this config was written and is adopted via an `import`
+block in `dns.tf`. Watch the plan summary line, not just the resource diffs — the first attempt
+here replaced the record (`1 to destroy`) rather than updating it, briefly removing it from DNS.
 
 ## 1. Capture the current state
 
@@ -88,13 +95,58 @@ against the live one.
 
 ## 5. Restore the database
 
+The app creates the schema itself via migrations on first boot, so the target
+database is not empty — clear it before restoring, or the dump's `CREATE TABLE`
+statements collide.
+
+Restore **as the `ilmomasiina` role, not as `postgres`**. A dump restored by the
+superuser leaves every table owned by `postgres`, and the app — which connects
+as `ilmomasiina` — then crash-loops on `permission denied for table
+SequelizeMeta`. `ensureDBOwnership` makes the role own the *database*, not
+objects someone else created inside it.
+
 ```bash
 scp ilmomasiina-cutover.sql.gz root@<NEW_IP>:/tmp/
 ssh root@<NEW_IP>
 
 systemctl stop podman-ilmomasiina.service
-zcat /tmp/ilmomasiina-cutover.sql.gz | sudo -u postgres psql ilmomasiina
+
+sudo -u postgres psql ilmomasiina -c 'DROP SCHEMA public CASCADE;'
+sudo -u postgres psql ilmomasiina -c 'CREATE SCHEMA public;'
+sudo -u postgres psql ilmomasiina -c 'ALTER SCHEMA public OWNER TO ilmomasiina;'
+
+# -U ilmomasiina is the important part.
+zcat /tmp/ilmomasiina-cutover.sql.gz \
+  | sudo -u postgres psql -v ON_ERROR_STOP=1 -U ilmomasiina -h 127.0.0.1 ilmomasiina
+
 systemctl start podman-ilmomasiina.service
+```
+
+If you restored as `postgres` by mistake, reassign rather than redo:
+
+```bash
+sudo -u postgres psql ilmomasiina <<'SQL'
+ALTER SCHEMA public OWNER TO ilmomasiina;
+DO $$
+DECLARE r record;
+BEGIN
+  FOR r IN SELECT tablename FROM pg_tables WHERE schemaname='public' LOOP
+    EXECUTE format('ALTER TABLE public.%I OWNER TO ilmomasiina', r.tablename);
+  END LOOP;
+  FOR r IN SELECT sequencename FROM pg_sequences WHERE schemaname='public' LOOP
+    EXECUTE format('ALTER SEQUENCE public.%I OWNER TO ilmomasiina', r.sequencename);
+  END LOOP;
+END
+$$;
+SQL
+```
+
+Confirm before moving on:
+
+```bash
+sudo -u postgres psql ilmomasiina -tAc \
+  "SELECT tableowner, count(*) FROM pg_tables WHERE schemaname='public' GROUP BY tableowner;"
+# must report ilmomasiina only
 ```
 
 ## 6. Verify before DNS
