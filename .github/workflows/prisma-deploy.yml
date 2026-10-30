@@ -1,0 +1,71 @@
+name: Prisma deploy
+
+on:
+    push:
+    delete:
+
+concurrency:
+    group: prisma-deploy-${{ github.ref }}
+    cancel-in-progress: false
+
+permissions:
+    contents: read
+    id-token: write
+
+jobs:
+    deploy:
+        if: github.event_name == 'push'
+        runs-on: ubuntu-latest
+        steps:
+            - name: Check out repository
+              uses: actions/checkout@v4
+
+            - name: Set up pnpm
+              uses: pnpm/action-setup@v4
+
+            - name: Set up Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: pnpm
+
+            - name: Set up Bun
+              uses: oven-sh/setup-bun@v2
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Deploy to Prisma Cloud
+              uses: prisma/cloud-deploy-action@v1
+              with:
+                  module: module.ts
+                  install-command: pnpm install --frozen-lockfile
+                  build-command: pnpm run build
+
+    teardown:
+        if: github.event_name == 'delete' && github.event.ref_type == 'branch'
+        runs-on: ubuntu-latest
+        steps:
+            - name: Check out repository
+              uses: actions/checkout@v4
+
+            - name: Set up pnpm
+              uses: pnpm/action-setup@v4
+
+            - name: Set up Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: pnpm
+
+            - name: Set up Bun
+              uses: oven-sh/setup-bun@v2
+
+            - name: Remove preview stage from Prisma Cloud
+              uses: prisma/cloud-deploy-action@v1
+              with:
+                  module: module.ts
+                  install-command: pnpm install --frozen-lockfile
+                  build-command: pnpm run build
+                  mode: destroy
+                  stage: ${{ github.event.ref }}

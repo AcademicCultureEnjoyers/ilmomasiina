@@ -2,6 +2,7 @@
   "name": "ilmomasiina",
   "version": "3.0.0-alpha.1",
   "private": true,
+  "type": "module",
   "license": "MIT",
   "engines": {
     "node": "^24"
@@ -73,5 +74,12 @@
       "react-final-form-arrays@3.1.4>react": "^19.2.0",
       "@types/nodemailer@*>@aws-sdk/client-sesv2": "-"
     }
+  },
+  "devDependencies": {
+    "@prisma/composer": "^0.36.0",
+    "@prisma/composer-prisma-cloud": "^0.36.0",
+    "@prisma/orm-postgres": "8.0.0-rc.20",
+    "@types/node": "^24.10.9",
+    "prisma": "8.0.0-rc.29"
   }
 }
