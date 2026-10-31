@@ -60,11 +60,11 @@ importers:
         version: 5.9.3
     devDependencies:
       '@prisma/composer':
-        specifier: ^0.36.0
-        version: 0.36.0(553cf34917998dea861230d9aea33e56)
+        specifier: 0.35.0
+        version: 0.35.0(553cf34917998dea861230d9aea33e56)
       '@prisma/composer-prisma-cloud':
-        specifier: ^0.36.0
-        version: 0.36.0(2bfee2a0f7e534119340fbd0dd042fae)
+        specifier: 0.35.0
+        version: 0.35.0(2bfee2a0f7e534119340fbd0dd042fae)
       '@prisma/orm-postgres':
         specifier: 8.0.0-rc.20
         version: 8.0.0-rc.20(@prisma/cli-engine@0.9.0(@prisma/management-api-sdk@1.80.0)(magicast@0.5.5))(magicast@0.5.5)(temporal-polyfill@1.0.6)(typanion@3.14.0)(typescript@5.9.3)
@@ -1840,18 +1840,14 @@ packages:
     peerDependencies:
       '@prisma/cli-engine': 0.9.0
 
-  '@prisma/composer-prisma-cloud@0.36.0':
-    resolution: {integrity: sha512-s/s2IHedOxZS+kN2HdWa2Cn9/98gSiljDaloXqydjznx4xUX53Cp9EPuK2IZDGg3Yoz4kRxxfiYMuEkTy5ZyRw==}
+  '@prisma/composer-prisma-cloud@0.35.0':
+    resolution: {integrity: sha512-TuvTJU8PNT6UYXcyiAkp4E0ofiHk12o5N+E0yktjld2TZiLZvNJFhVGBIQFZrmr8o6YaZVZyL3X8dAa3AsBd8A==}
     engines: {node: ^22.18.0 || ^24.11.0 || >=26.0.0}
     peerDependencies:
       '@prisma/orm-postgres': 8.0.0-rc.20
 
   '@prisma/composer@0.35.0':
     resolution: {integrity: sha512-qQZY57p6JpnJxiuZ/EWxC2VBJIW3UqA7FCbuCRCh2coecojDAPhEQ4NaBac7JhpFJxWZpsaXmzGznF5sX53lSQ==}
-    engines: {node: ^22.18.0 || ^24.11.0 || >=26.0.0}
-
-  '@prisma/composer@0.36.0':
-    resolution: {integrity: sha512-Wcf/HrQG6xx35xBcxjFU8UCkuvsMFPWe5QEBGn7dZcf5h35iFIB5jbE88NeKU9RKf+klvR939w1mHnKRWvx7TQ==}
     engines: {node: ^22.18.0 || ^24.11.0 || >=26.0.0}
 
   '@prisma/compute-sdk@0.43.0':
@@ -7591,13 +7587,13 @@ snapshots:
       - vitest
       - ws
 
-  '@prisma/composer-prisma-cloud@0.36.0(2bfee2a0f7e534119340fbd0dd042fae)':
+  '@prisma/composer-prisma-cloud@0.35.0(2bfee2a0f7e534119340fbd0dd042fae)':
     dependencies:
       '@distilled.cloud/prisma': 1.0.0-rc.15(effect@4.0.3)
       '@effect/platform-bun': 4.0.3(effect@4.0.3)
       '@effect/platform-node': 4.0.3(effect@4.0.3)(redis@6.3.1)
       '@effect/platform-node-shared': 4.0.3(effect@4.0.3)
-      '@prisma/composer': 0.36.0(553cf34917998dea861230d9aea33e56)
+      '@prisma/composer': 0.35.0(553cf34917998dea861230d9aea33e56)
       '@prisma/dev': 0.25.2(typescript@5.9.3)
       '@prisma/management-api-sdk': 1.90.0
       '@prisma/orm-postgres': 8.0.0-rc.20(@prisma/cli-engine@0.9.0(@prisma/management-api-sdk@1.80.0)(magicast@0.5.5))(magicast@0.5.5)(temporal-polyfill@1.0.6)(typanion@3.14.0)(typescript@5.9.3)
@@ -7657,53 +7653,13 @@ snapshots:
       '@effect/sql-d1': 4.0.3(effect@4.0.3)
       '@effect/sql-sqlite-do': 4.0.3(effect@4.0.3)
       '@effect/vitest': 4.0.3(effect@4.0.3)(vitest@4.0.17(@types/node@24.10.9)(jiti@2.7.0)(sass@1.97.2)(tsx@4.23.1)(yaml@2.9.1))
-      '@prisma/management-api-sdk': 1.80.0
-      '@standard-schema/spec': 1.1.0
-      alchemy: 2.0.0-beta.83(f765c01487ca0a59ac9151b31e6793e8)
-      arktype: 2.2.9
-      cross-spawn: 7.0.6
-      effect: 4.0.3
-      esbuild: 0.28.1
-    transitivePeerDependencies:
-      - '@alchemy.run/frontend-frameworks'
-      - '@aws/durable-execution-sdk-js'
-      - '@effect/platform-bun'
-      - '@effect/platform-node'
-      - '@effect/sql-libsql'
-      - '@effect/sql-mysql2'
-      - '@effect/sql-pg'
-      - '@prisma/orm-postgres'
-      - '@types/node'
-      - '@types/react'
-      - '@vercel/nft'
-      - bufferutil
-      - drizzle-kit
-      - drizzle-orm
-      - hono
-      - mongodb
-      - mysql2
-      - pg
-      - prisma
-      - proxy-agent
-      - react-devtools-core
-      - typescript
-      - utf-8-validate
-      - vite
-      - vitest
-      - ws
-
-  '@prisma/composer@0.36.0(553cf34917998dea861230d9aea33e56)':
-    dependencies:
-      '@effect/sql-d1': 4.0.3(effect@4.0.3)
-      '@effect/sql-sqlite-do': 4.0.3(effect@4.0.3)
-      '@effect/vitest': 4.0.3(effect@4.0.3)(vitest@4.0.17(@types/node@24.10.9)(jiti@2.7.0)(sass@1.97.2)(tsx@4.23.1)(yaml@2.9.1))
       '@prisma/management-api-sdk': 1.90.0
       '@standard-schema/spec': 1.1.0
       alchemy: 2.0.0-beta.83(f765c01487ca0a59ac9151b31e6793e8)
       arktype: 2.2.9
       cross-spawn: 7.0.6
       effect: 4.0.3
-      esbuild: 0.28.1
+      esbuild: 0.28.2
     transitivePeerDependencies:
       - '@alchemy.run/frontend-frameworks'
       - '@aws/durable-execution-sdk-js'
