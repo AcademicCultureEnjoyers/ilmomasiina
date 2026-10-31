@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { resolveListenPort } from "../../src/bin/server";
+import prismaServiceModule from "../../src/prismaService";
 
 describe("resolveListenPort", () => {
     it("uses the Composer runtime port when the process env does not override it", () => {
@@ -33,5 +34,11 @@ describe("resolveListenPort", () => {
                 process.env.PORT = previous;
             }
         }
+    });
+
+    it("exports the default Composer node entry expected by the Cloud bootstrap", () => {
+        expect(prismaServiceModule).toBeDefined();
+        expect(prismaServiceModule).toHaveProperty("run");
+        expect(typeof prismaServiceModule.run).toBe("function");
     });
 });
