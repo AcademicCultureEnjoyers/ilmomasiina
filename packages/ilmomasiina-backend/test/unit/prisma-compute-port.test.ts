@@ -42,6 +42,12 @@ describe("resolveListenPort", () => {
     expect(typeof prismaServiceModule.run).toBe("function");
   });
 
+  it("packages the built dist tree so local imports such as ../app resolve inside the bundle", () => {
+    expect(prismaServiceModule.build).toBeDefined();
+    expect(prismaServiceModule.build.dir).toBe("./dist");
+    expect(prismaServiceModule.build.entry).toBe("./bin/server.js");
+  });
+
   it("stages runtime dependencies for the deployed app entry so packages like debug are present", () => {
     expect(prismaServiceModule.build).toBeDefined();
     expect(prismaServiceModule.build.dependencies).toBe("external");

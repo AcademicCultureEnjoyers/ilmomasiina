@@ -6,6 +6,7 @@ const apiService = compute({
   deps: {},
   build: node({
     module: import.meta.url,
+    dir: "./dist",
     entry: "./bin/server.js",
     dependencies: "external",
   }),
