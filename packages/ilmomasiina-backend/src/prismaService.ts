@@ -2,12 +2,13 @@ import { compute } from "@prisma/composer-prisma-cloud";
 import node from "@prisma/composer/node";
 
 const apiService = compute({
-    name: "api",
-    deps: {},
-    build: node({
-        module: import.meta.url,
-        entry: "./bin/server.js",
-    }),
+  name: "api",
+  deps: {},
+  build: node({
+    module: import.meta.url,
+    entry: "./bin/server.js",
+    dependencies: "external",
+  }),
 });
 
 // Prisma Cloud bootstraps the built service by importing the default export and calling
