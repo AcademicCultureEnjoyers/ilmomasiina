@@ -2,7 +2,8 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "rootDir": "src",
-    "module": "CommonJS"
+    "module": "es2022",
+    "moduleResolution": "bundler"
   },
   "include": ["src/**/*"],
   "references": [

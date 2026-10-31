@@ -1,6 +1,7 @@
 {
   "name": "@tietokilta/ilmomasiina-backend",
   "version": "3.0.0-alpha.1",
+  "type": "module",
   "license": "MIT",
   "repository": {
     "type": "git",
